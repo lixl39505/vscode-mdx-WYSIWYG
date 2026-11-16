@@ -1,0 +1,94 @@
+{
+  "name": "mdx-wysiwyg",
+  "displayName": "MDX WYSIWYG",
+  "description": "Lightweight inline visual decorations for MDX source editing.",
+  "version": "0.1.4",
+  "publisher": "lixl39505",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.146.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onLanguage:mdx"
+  ],
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {
+    "configuration": {
+      "title": "MDX WYSIWYG",
+      "properties": {
+        "mdxWysiwyg.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用 MDX 行内装饰。"
+        },
+        "mdxWysiwyg.boldColor": {
+          "type": "string",
+          "default": "#E6D5A7",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "粗体文字颜色（#RRGGBB）。"
+        },
+        "mdxWysiwyg.linkColor": {
+          "type": "string",
+          "default": "#78DCE8",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "链接和引用定义颜色（#RRGGBB）。"
+        },
+        "mdxWysiwyg.imageColor": {
+          "type": "string",
+          "default": "#AB9DF2",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "图片描述颜色（#RRGGBB）。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "test": "node scripts/build.mjs --tests && node --test dist/test.cjs",
+    "vscode:prepublish": "npm run check && npm run build",
+    "package": "vsce package --no-dependencies --out artifacts/",
+    "test:host": "node scripts/test-host.mjs",
+    "test:renderer": "node scripts/test-renderer.mjs"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "^2.0.2",
+    "mdast-util-gfm-strikethrough": "^2.0.0",
+    "mdast-util-mdx": "^3.0.0",
+    "micromark-extension-gfm-strikethrough": "^2.0.0",
+    "micromark-extension-mdxjs": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.146.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0"
+  },
+  "author": "lixl39505",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lixl39505/vscode-mdx-WYSIWYG.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lixl39505/vscode-mdx-WYSIWYG/issues"
+  },
+  "homepage": "https://github.com/lixl39505/vscode-mdx-WYSIWYG#readme",
+  "keywords": [
+    "mdx",
+    "markdown",
+    "wysiwyg",
+    "decorations"
+  ]
+}

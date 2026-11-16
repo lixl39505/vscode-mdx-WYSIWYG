@@ -1,0 +1,1 @@
+{"version":"0.2.0","configurations":[{"name":"运行 MDX WYSIWYG","type":"extensionHost","request":"launch","args":["--extensionDevelopmentPath=${workspaceFolder}"],"preLaunchTask":"build","outFiles":["${workspaceFolder}/dist/**/*.cjs"]}]}
