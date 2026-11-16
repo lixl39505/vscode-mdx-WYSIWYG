@@ -23,7 +23,7 @@
 
 ## 开发、测试和打包
 
-本机检查版本为 VS Code 1.146.0 arm64，engines.vscode 为 ^1.146.0。开发构建使用 Node.js 22 或更新版本。参考相邻 mdx-image-paste 项目的 TypeScript + esbuild + vsce 结构；扩展运行时只有一个打包后的 CommonJS 文件，无需运行 npm。
+需要 VS Code 1.146.0 或更新版本。开发构建使用 Node.js 22+、TypeScript、esbuild 和 vsce；扩展安装后无需运行 npm。
 
 ```sh
 npm ci --cache temp/npm-cache
@@ -33,19 +33,11 @@ npm run build
 npm run package
 ```
 
-打包产物：artifacts/mdx-wysiwyg-0.1.4.vsix。依赖已打包，不随 VSIX 附带 node_modules。无 Marketplace 发布流程及凭据。
+打包产物：artifacts/mdx-wysiwyg-0.1.4.vsix。依赖已打包，不随 VSIX 附带 node_modules。
 
 按 F5 启动 Extension Development Host；打开 examples/demo.mdx 并确认语言为 MDX。npm run watch 可持续构建，修改后重新加载开发窗口。
 
 ## 本地安装、卸载
-
-发布者和作者为 lixl39505，与 MDX Image Paste 一致；扩展 ID 为 lixl39505.mdx-wysiwyg。升级自 local-mdx 版本时请先卸载旧 ID，避免两个扩展重复装饰：
-
-```sh
-code --uninstall-extension local-mdx.mdx-wysiwyg
-```
-
-默认粗体使用浅暖黄 #E6D5A7，比初版的鲜黄色更柔和，并提高旧版灰黄的明度。若曾手动设置 mdxWysiwyg.boldColor，请重置该项以使用新默认值。
 
 ```sh
 code --install-extension artifacts/mdx-wysiwyg-0.1.4.vsix --force
@@ -56,18 +48,20 @@ code --uninstall-extension lixl39505.mdx-wysiwyg
 
 ## 性能与已知限制
 
-只为可见 MDX 文档保存版本号和范围，同一文档的分栏共用解析结果；AST 解析后释放。输入防抖 150ms，编辑时保留已有装饰，由 VS Code 跟随文本移动范围，解析完成后一次替换，避免全篇先消失再出现。保存立即更新。装饰仅提交每个编辑器可见区域及前后各 20 行，分栏分别计算；跨行范围裁剪至该区域，重叠缓冲区合并。滚动和折叠导致的视口变化只使用缓存，不重新解析；未变化的装饰类型不重复提交。文本修改后重新提交视口内非空类型，避免 VS Code 自动移动的旧范围与缓存坐标不一致。切换和关闭释放缓存及定时器，停用时释放装饰及全部监听器。不会读取链接、网络、图片或执行表达式。
+- **按视口装饰**：只为可见区域及前后各 20 行设置装饰。分栏共用解析缓存，滚动时不重新解析；快速跳转时，文字可能短暂未着色。
+- **更新时机**：输入防抖 150ms，保存时立即更新。等待解析期间保留原有装饰，局部样式可能暂时过时。
+- **大文件**：使用同步全文解析，长文仍可能短暂占用扩展宿主线程；超过 200,000 个 UTF-16 单元的文档自动停用装饰。
+- **无效语法**：JSX、表达式等 MDX 语法未闭合或无效时，暂时清除全篇装饰；语法恢复有效后自动恢复。
+- **语法范围**：遵循 MDX 的 Markdown 识别规则，包括组件内的空行要求；不额外支持 frontmatter、数学语法等方言，单波浪线不作为删除线。
+- **主题配色**：始终保留源码标记；装饰颜色可能覆盖主题对相同文字的配色，默认颜色适合深色主题。
+- **资源管理**：仅缓存可见文档的解析范围，关闭文件或停用扩展时释放相关资源；不访问链接、加载图片或执行表达式。
 
-当前使用同步整文解析，超过 200,000 个 UTF-16 单元的文档自动不装饰，以限制阻塞和内存；普通文件仍存在一次整文解析的开销，不提供增量解析或后台线程解析；视口优化减少范围构造、传输及待绘制装饰数量，不能消除解析阻塞。新增或移除的格式会在防抖结束后更新；等待期间局部样式可能暂时过时。
+测试与性能数据见[集成测试记录](docs/test-results.md)和[渲染性能报告](docs/rendering-performance.md)。实测结果仅覆盖报告中的环境与场景，不保证所有文档和硬件均无卡顿。
 
-MDX 语法不完整（例如尚未关闭的 JSX、表达式）或无效时，全篇暂时不装饰，恢复有效语法后自动恢复，不回退到可能误识别代码的正则。JSX 中 Markdown 的具体识别遵循 MDX 语法，包括空行要求。没有额外扩展 frontmatter、数学语法或其他方言。单波浪线不视为删除线。源码标记始终显示，装饰也可能覆盖主题对相同文字的配色。
+可运行以下命令复现集成与渲染测试；测试使用独立 VS Code 窗口，日志、trace 和截图保存在 `temp/`：
 
-测试覆盖语法、嵌套、引用、代码、组件、UTF-16 范围和编辑后更新；事件测试使用模拟 VS Code API，覆盖防抖、保存、配置、可见编辑器切换、关闭和释放，以及视口裁剪、滚动不解析、不重复提交和分栏独立装饰。这些模拟测试本身不能证明 GUI 性能；另有真实扩展宿主及渲染器对比测试，分别记录在 docs/test-results.md 和 docs/rendering-performance.md。
-
-已在本机扩展宿主中验证滚动缓存、分栏、编辑后更新，以及与 unifiedjs.vscode-mdx 1.8.18 的示例组件折叠/展开，详见 集成测试记录（docs/test-results.md）。实际颜色显示及更广泛的组件用法仍需手工验证：在两个扩展同时启用时打开示例，检查颜色和嵌套样式，折叠/展开 Details，编辑文本、保存、切换分栏及文件、关闭重开，并切换启用设置。实测仅覆盖测试记录列出的示例及命令，不代表所有 GUI 行为均已验证。
-
-视口优化手工验证：在长文中快速滚动、拖动滚动条、分栏定位到不同段落，确认进入视口的粗体和链接及时着色；折叠后再展开组件、修改可见区前的文本，检查范围是否正确。缓冲区外不设置装饰，快速跳转时可能短暂看到尚未着色的文字；截图或复制源码不受影响。已在本机 Chromium 渲染器中采集输入、滚动时的布局、绘制、长任务、帧间隔和 GPU 进程 trace；实测范围与结果见 docs/rendering-performance.md。该测试不作为所有场景的流畅度保证。
-
-本机集成测试：npm run test:host，会使用 temp/ 下的隔离配置打开并退出 VS Code；环境路径及测量边界见 集成测试记录（docs/test-results.md）。
-
-渲染对比测试：npm run test:renderer；随后 node scripts/summarize-renderer.mjs 汇总。会将独立测试窗口置前、模拟输入和滚动，并在 temp/ 保存原始 trace 与截图。详情及测量边界见 docs/rendering-performance.md。
+```sh
+npm run test:host
+npm run test:renderer
+node scripts/summarize-renderer.mjs
+```
